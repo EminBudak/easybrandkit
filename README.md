@@ -10,6 +10,8 @@ npx easybrandkit linear.app
 
 Ask a coding agent for a landing page, a launch video or a pitch deck for a product and it guesses: a blue that is almost right, a logo retyped in Inter. easybrandkit opens the real site in a headless browser, finds the logos the site itself draws, cuts each one out on the background it sits on, and writes down the colors and fonts the page actually uses. Your agent reads one Markdown file and works from facts.
 
+The story behind it, and the bugs that shaped it: [easybrandkit: The Bugs That Made It Useful](https://eminbudak.com/blog/easybrandkit-brand-kit-for-coding-agents/).
+
 ## What you get
 
 ```
