@@ -4,7 +4,7 @@
 const { makeKit } = require("./lib/kit");
 const version = require("./lib/version");
 
-const USAGE = `Usage: brandkit <url> [options]
+const USAGE = `Usage: easybrandkit <url> [options]
 
 Reads a website the way a browser draws it and saves its brand in one
 folder: the logo files, colors, fonts, the first screen, and the app store
@@ -12,7 +12,7 @@ icon and screenshots when the site links to its apps. brand.json is for
 tools, BRAND.md for people and coding agents.
 
 Options:
-  --out <dir>      where to save (default: ./brandkit-<host>)
+  --out <dir>      where to save (default: ./easybrandkit-<host>)
   --no-stores      skip app store listings and social profiles
   --json           print brand.json instead of a summary
   --timeout <s>    give up after this many seconds (default: 120)
@@ -42,7 +42,7 @@ function parse(argv) {
     else rest.push(arg);
   }
   if (!(options.timeout >= 30 && options.timeout <= 600)) throw new Error("--timeout takes 30 to 600 seconds");
-  if (!options.help && !options.version && rest.length !== 1) throw new Error("Give one website address, for example: brandkit acme.com");
+  if (!options.help && !options.version && rest.length !== 1) throw new Error("Give one website address, for example: easybrandkit acme.com");
   return { ...options, url: rest[0] };
 }
 
@@ -67,7 +67,7 @@ async function main() {
   try {
     options = parse(process.argv.slice(2));
   } catch (err) {
-    process.stderr.write(`brandkit: ${err.message}\n\n${USAGE}\n`);
+    process.stderr.write(`easybrandkit: ${err.message}\n\n${USAGE}\n`);
     process.exit(2);
   }
   if (options.help) return void process.stdout.write(`${USAGE}\n`);
@@ -82,7 +82,7 @@ async function main() {
     process.stdout.write(options.json ? JSON.stringify(result.kit, null, 2) + "\n" : summary(result) + "\n");
   } catch (err) {
     if (options.json) process.stdout.write(JSON.stringify({ ok: false, error: err.message }) + "\n");
-    process.stderr.write(`brandkit: ${err.message}\n`);
+    process.stderr.write(`easybrandkit: ${err.message}\n`);
     process.exit(1);
   }
 }

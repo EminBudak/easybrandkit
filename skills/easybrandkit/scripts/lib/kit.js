@@ -40,7 +40,7 @@ const SOURCE_ORDER = ["appstore", "googleplay", "x", "youtube", "linkedin", "thr
 // address; anything that is not http(s) is refused.
 function normalizeUrl(raw) {
   const text = String(raw || "").trim();
-  if (!text) throw new Error("Give a website address, for example: brandkit acme.com");
+  if (!text) throw new Error("Give a website address, for example: easybrandkit acme.com");
   let url;
   try {
     url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`);
@@ -84,7 +84,7 @@ function kitFiles(kit) {
   return files.filter((file) => typeof file === "string" && file).map((file) => path.basename(file));
 }
 
-// The kit's folder: created when missing, reused when an earlier brandkit run
+// The kit's folder: created when missing, reused when an earlier easybrandkit run
 // made it (that kit's files are replaced), refused when it holds anything
 // else, so a run never mixes into or overwrites someone's own files.
 function prepareDir(dir) {
@@ -210,7 +210,7 @@ async function readSources(links, dir, log, skip = []) {
 }
 
 function writeMarkdown(kit, dir) {
-  const lines = [`# ${kit.name} brand kit`, "", `Read from ${kit.url} on ${kit.capturedAt.slice(0, 10)} by brandkit ${kit.generator.split(" ")[1]}.`, ""];
+  const lines = [`# ${kit.name} brand kit`, "", `Read from ${kit.url} on ${kit.capturedAt.slice(0, 10)} by easybrandkit ${kit.generator.split(" ")[1]}.`, ""];
   lines.push("## Colors", "");
   if (kit.colors.length) {
     lines.push("| Hex | Where the site uses it |", "| --- | --- |");
@@ -311,7 +311,7 @@ async function makeKit(rawUrl, { dir, stores = true, timeLimit = 120_000, log = 
     throw new Error(`${asked} is a page on ${host.replace(/^(www|m|mobile)\./, "")}, not the brand's own site. Give the brand's website, or its App Store or Google Play listing.`);
   }
   const notes = [];
-  const target = dir || (listing ? `brandkit-${listing.type}-${listing.id}` : `brandkit-${host.replace(/^www\./, "")}`);
+  const target = dir || (listing ? `easybrandkit-${listing.type}-${listing.id}` : `easybrandkit-${host.replace(/^www\./, "")}`);
   const existed = fs.existsSync(target);
   prepareDir(target);
   let given = null;
@@ -354,7 +354,7 @@ async function makeKit(rawUrl, { dir, stores = true, timeLimit = 120_000, log = 
     // carry the company's name instead.
     name: (given && given.name) || (read ? read.name : "App"),
     capturedAt: new Date().toISOString(),
-    generator: `brandkit ${version}`,
+    generator: `easybrandkit ${version}`,
     colors: read ? read.colors : [],
     fonts: found.brand.fonts,
     text: read ? read.text : { title: given.name || "", description: given.description || "", headings: [], ctas: [] },

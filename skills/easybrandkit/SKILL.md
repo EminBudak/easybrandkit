@@ -1,16 +1,16 @@
 ---
-name: brandkit
+name: easybrandkit
 description: Get a product's real brand from its website before you design, build or animate anything for it. Saves the logo files cut from the page, the colors and fonts the site uses, its first screen, and its app store icon and screenshots. Use it whenever the user asks for a landing page, video, slide deck, social post, ad, mockup or UI for a product, company or website and you know its address.
 ---
 
-# brandkit
+# easybrandkit
 
-Guessed brand colors and redrawn logos make work look fake at first glance. brandkit opens the real site in a headless browser, reads it the way the browser draws it, and saves what you need in one folder.
+Guessed brand colors and redrawn logos make work look fake at first glance. easybrandkit opens the real site in a headless browser, reads it the way the browser draws it, and saves what you need in one folder.
 
 ## Get the kit
 
 ```bash
-node <skill>/scripts/brandkit.js <url> --out brand/<name>
+node <skill>/scripts/easybrandkit.js <url> --out brand/<name>
 ```
 
 `<skill>` is this skill's folder. The script needs Node 22 or newer and Chrome, Chromium, Edge or Brave on the machine; it installs nothing and needs no API key. A run takes 20 to 90 seconds. Give it the product's home page; an address deeper in the site is read from the home page anyway, because blogs and help centers often wear another theme. For an app, an App Store or Google Play link works too: the kit gets the store icon and screenshots, and the brand comes from the website the listing names. A social profile link is refused; find the product's website instead.

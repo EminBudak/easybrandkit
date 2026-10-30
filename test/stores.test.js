@@ -6,7 +6,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const stores = require("../skills/brandkit/scripts/lib/stores");
+const stores = require("../skills/easybrandkit/scripts/lib/stores");
 
 test("classifies store listings and social profiles, and nothing else", () => {
   assert.deepEqual(stores.classify("https://apps.apple.com/us/app/acme/id1234567890"), {

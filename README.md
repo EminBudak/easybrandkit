@@ -1,19 +1,19 @@
-# brandkit
+# easybrandkit
 
 Get a website's real logo files, colors, fonts and first screen, saved as a brand kit your coding agent can read.
 
 ```bash
-npx @eminbudak/brandkit linear.app
+npx easybrandkit linear.app
 ```
 
-![The brand kit brandkit made from linear.app](.github/assets/linear-card.jpg)
+![The brand kit easybrandkit made from linear.app](.github/assets/linear-card.jpg)
 
-Ask a coding agent for a landing page, a launch video or a pitch deck for a product and it guesses: a blue that is almost right, a logo retyped in Inter. brandkit opens the real site in a headless browser, finds the logos the site itself draws, cuts each one out on the background it sits on, and writes down the colors and fonts the page actually uses. Your agent reads one Markdown file and works from facts.
+Ask a coding agent for a landing page, a launch video or a pitch deck for a product and it guesses: a blue that is almost right, a logo retyped in Inter. easybrandkit opens the real site in a headless browser, finds the logos the site itself draws, cuts each one out on the background it sits on, and writes down the colors and fonts the page actually uses. Your agent reads one Markdown file and works from facts.
 
 ## What you get
 
 ```
-brandkit-linear.app/
+easybrandkit-linear.app/
   BRAND.md               the kit, for people and agents
   brand.json             the same, for scripts
   card.png               the kit on one picture, like the one above
@@ -29,7 +29,7 @@ brandkit-linear.app/
 - **Colors** are the solid colors of the site's buttons, headings, text links, header, footer and large surfaces, plus the color the logo itself is drawn in. Tints, grey buttons and white language switches do not count.
 - **Fonts** are the families the page uses for headings and body text.
 - **Words**: the page title and description, its headings in reading order and what its buttons say, so copy can start from the product's own words instead of made-up claims.
-- **App stores and profiles**: when the site links to its App Store or Google Play listing, brandkit saves the app icon at 1024 px and up to five screenshots. Linked X, YouTube and LinkedIn accounts give their profile pictures.
+- **App stores and profiles**: when the site links to its App Store or Google Play listing, easybrandkit saves the app icon at 1024 px and up to five screenshots. Linked X, YouTube and LinkedIn accounts give their profile pictures.
 - **Icons, preview images, the web manifest and social links** are listed with their URLs.
 
 | | |
@@ -38,17 +38,17 @@ brandkit-linear.app/
 
 ## Use it with your agent
 
-brandkit ships as an [Agent Skill](https://agentskills.io). Install it once and your agent runs it by itself when you ask for something for a product:
+easybrandkit ships as an [Agent Skill](https://agentskills.io). Install it once and your agent runs it by itself when you ask for something for a product:
 
 ```bash
-npx skills add EminBudak/brandkit
+npx skills add EminBudak/easybrandkit
 ```
 
 That covers Claude Code, Codex, Cursor and the other agents the [`skills`](https://github.com/vercel-labs/skills) CLI supports. In Claude Code you can add it as a plugin instead:
 
 ```
-/plugin marketplace add EminBudak/brandkit
-/plugin install brandkit@brandkit
+/plugin marketplace add EminBudak/easybrandkit
+/plugin install easybrandkit@easybrandkit
 ```
 
 Then ask as usual:
@@ -60,17 +60,19 @@ The skill carries its own script, so it installs nothing else and needs no API k
 ## Use it from the command line
 
 ```
-npx @eminbudak/brandkit <url> [options]
+npx easybrandkit <url> [options]
 
-  --out <dir>      where to save (default: ./brandkit-<host>)
+  --out <dir>      where to save (default: ./easybrandkit-<host>)
   --no-stores      skip app store listings and social profiles
   --json           print brand.json instead of a summary
   --timeout <s>    give up after this many seconds (default: 120)
 ```
 
-The address can be a website or an App Store or Google Play listing. A listing gives the app icon and screenshots, and the brand is read from the website the listing names. A social profile is not a brand's site, so brandkit refuses one and asks for the website.
+The address can be a website or an App Store or Google Play listing. A listing gives the app icon and screenshots, and the brand is read from the website the listing names. A social profile is not a brand's site, so easybrandkit refuses one and asks for the website.
 
-It needs Node 22 or newer and Chrome, Chromium, Edge or Brave. Set `CHROME_PATH` to pick the browser. There are no npm dependencies and nothing is downloaded: brandkit drives the browser you already have over the Chrome DevTools Protocol, with a throwaway profile.
+Installed globally (`npm install -g easybrandkit`), the command is `easybrandkit`.
+
+It needs Node 22 or newer and Chrome, Chromium, Edge or Brave. Set `CHROME_PATH` to pick the browser. There are no npm dependencies and nothing is downloaded: easybrandkit drives the browser you already have over the Chrome DevTools Protocol, with a throwaway profile.
 
 ## How it works
 
@@ -83,7 +85,7 @@ It needs Node 22 or newer and Chrome, Chromium, Edge or Brave. Set `CHROME_PATH`
 
 ## Limits
 
-- A site that answers with a bot check or a login wall gets no kit: brandkit stops and says so, instead of saving the check page's colors.
+- A site that answers with a bot check or a login wall gets no kit: easybrandkit stops and says so, instead of saving the check page's colors.
 - Instagram, Facebook and TikTok serve nothing without a login, so they are not asked.
 - A logo drawn into a canvas or a WebGL scene is not found.
 - Colors come from what the home page shows. A main color used on one button of another page will not show up.

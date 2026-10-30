@@ -64,7 +64,7 @@ async function launch({ width, height }) {
   if (!binary) {
     throw new Error("No Chrome, Chromium, Edge or Brave found. Install one, or point CHROME_PATH at its binary.");
   }
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "brandkit-chrome-"));
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "easybrandkit-chrome-"));
   const child = spawn(
     binary,
     [

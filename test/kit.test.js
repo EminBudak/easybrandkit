@@ -12,10 +12,10 @@ const path = require("node:path");
 const zlib = require("node:zlib");
 const { spawnSync } = require("node:child_process");
 const test = require("node:test");
-const { makeKit, normalizeUrl, homePageOf, siteOfListing, prepareDir, brandName } = require("../skills/brandkit/scripts/lib/kit");
-const { findChrome } = require("../skills/brandkit/scripts/lib/chrome");
+const { makeKit, normalizeUrl, homePageOf, siteOfListing, prepareDir, brandName } = require("../skills/easybrandkit/scripts/lib/kit");
+const { findChrome } = require("../skills/easybrandkit/scripts/lib/chrome");
 
-const CLI = path.resolve(__dirname, "../skills/brandkit/scripts/brandkit.js");
+const CLI = path.resolve(__dirname, "../skills/easybrandkit/scripts/easybrandkit.js");
 const noBrowser = !findChrome() && "no Chrome, Chromium, Edge or Brave installed";
 
 // Minimal PNG reader for 8-bit RGB/RGBA, non-interlaced (what Chrome writes).
@@ -91,7 +91,7 @@ test("stores and social networks: a listing leads to its website, a profile is r
   assert.equal(siteOfListing("https://www.acme.com/help/support-request"), "https://www.acme.com/");
   assert.equal(siteOfListing("https://www.facebook.com/acme"), "");
   assert.equal(siteOfListing("not a url"), "");
-  const parent = fs.mkdtempSync(path.join(os.tmpdir(), "brandkit-out-"));
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), "easybrandkit-out-"));
   const dir = path.join(parent, "kit");
   try {
     for (const profile of ["x.com/acme", "https://www.instagram.com/acme/", "https://www.linkedin.com/company/acme", "apps.apple.com"]) {
@@ -104,7 +104,7 @@ test("stores and social networks: a listing leads to its website, a profile is r
 });
 
 test("never writes into a folder that holds someone else's files", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brandkit-dir-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "easybrandkit-dir-"));
   try {
     fs.writeFileSync(path.join(dir, "notes.txt"), "mine");
     assert.throws(() => prepareDir(dir), /not empty/);
@@ -121,13 +121,13 @@ test("never writes into a folder that holds someone else's files", () => {
 });
 
 test("the skill folder carries its own version, the same as the package's", () => {
-  assert.equal(require("../skills/brandkit/scripts/lib/version"), require("../package.json").version);
+  assert.equal(require("../skills/easybrandkit/scripts/lib/version"), require("../package.json").version);
 });
 
 test("the CLI explains itself and refuses a missing address", () => {
   const help = spawnSync(process.execPath, [CLI, "--help"], { encoding: "utf8" });
   assert.equal(help.status, 0);
-  assert.match(help.stdout, /Usage: brandkit <url>/);
+  assert.match(help.stdout, /Usage: easybrandkit <url>/);
   const none = spawnSync(process.execPath, [CLI], { encoding: "utf8" });
   assert.equal(none.status, 2);
   assert.match(none.stderr, /Give one website address/);
@@ -185,7 +185,7 @@ test("logos: the site's own marks on their real background, plus colors, fonts, 
     if (body) res.writeHead(200, { "content-type": "image/svg+xml" }).end(body);
     else res.writeHead(200, { "content-type": "text/html" }).end(html);
   });
-  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "brandkit-out-")), "kit");
+  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "easybrandkit-out-")), "kit");
   try {
     // A blog post's address: the kit is read from the home page.
     const { kit } = await makeKit(`${origin}/blog/first-post`, { dir, stores: false });
@@ -205,7 +205,7 @@ test("logos: the site's own marks on their real background, plus colors, fonts, 
     assert.deepEqual(header.pixel(2, 2), [255, 255, 255], "header background");
     assert.deepEqual(footer.pixel(footer.width >> 1, footer.height >> 1), [255, 255, 255], "footer logo");
     assert.deepEqual(footer.pixel(2, 2), [29, 36, 62], "footer background");
-    assert.ok(fs.readFileSync(path.join(dir, "logo-01.png")).includes("Source\0brandkit logo"), "the cut is tagged");
+    assert.ok(fs.readFileSync(path.join(dir, "logo-01.png")).includes("Source\0easybrandkit logo"), "the cut is tagged");
 
     assert.deepEqual(kit.icons, [
       { rel: "icon", href: `${origin}/favicon.ico`, sizes: "" },
@@ -278,7 +278,7 @@ test("a bot check served instead of the page fails with a reason and leaves noth
     <body style="margin:0;font-family:Arial"><h1 style="color:rgb(221,107,16)">Confirm you are human</h1>
     <button style="width:200px;height:44px;background:rgb(255,153,2)">Begin</button></body></html>`;
   const { server, origin } = await serve((req, res) => res.writeHead(200, { "content-type": "text/html" }).end(html));
-  const parent = fs.mkdtempSync(path.join(os.tmpdir(), "brandkit-out-"));
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), "easybrandkit-out-"));
   const dir = path.join(parent, "kit");
   try {
     await assert.rejects(makeKit(origin, { dir, stores: false }), /answered with a bot check \("Human Verification"\)/);
@@ -313,7 +313,7 @@ test("logos: the mark alone, as it stands once settled: no neighbour cut by the 
     <div class="backdrop"></div><div class="dialog">Sale</div>
   </body></html>`;
   const { server, origin } = await serve((req, res) => res.writeHead(200, { "content-type": "text/html" }).end(html));
-  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "brandkit-out-")), "kit");
+  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "easybrandkit-out-")), "kit");
   try {
     const { kit } = await makeKit(origin, { dir, stores: false });
     assert.equal(kit.logos[0].where, "header", JSON.stringify(kit.logos));

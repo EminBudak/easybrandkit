@@ -1,19 +1,19 @@
 {
-  "name": "@eminbudak/brandkit",
+  "name": "easybrandkit",
   "version": "0.1.0",
   "description": "Get a website's real logo files, colors, fonts and first screen as a brand kit your coding agent can read.",
   "license": "MIT",
   "author": "Emin Budak",
-  "homepage": "https://github.com/EminBudak/brandkit#readme",
+  "homepage": "https://github.com/EminBudak/easybrandkit#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EminBudak/brandkit.git"
+    "url": "git+https://github.com/EminBudak/easybrandkit.git"
   },
-  "bugs": "https://github.com/EminBudak/brandkit/issues",
+  "bugs": "https://github.com/EminBudak/easybrandkit/issues",
   "bin": {
-    "brandkit": "skills/brandkit/scripts/brandkit.js"
+    "easybrandkit": "skills/easybrandkit/scripts/easybrandkit.js"
   },
-  "main": "skills/brandkit/scripts/lib/kit.js",
+  "main": "skills/easybrandkit/scripts/lib/kit.js",
   "files": [
     "skills",
     "README.md",

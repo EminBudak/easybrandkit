@@ -603,12 +603,12 @@ const ISOLATE_MARK = `function (r) {
     hidden.push([el, el.style.getPropertyValue("visibility"), el.style.getPropertyPriority("visibility")]);
   }
   hidden.forEach(function (h) { h[0].style.setProperty("visibility", "hidden", "important"); });
-  window.__brandkitRestore = function () {
+  window.__easybrandkitRestore = function () {
     hidden.forEach(function (h) {
       if (h[1]) h[0].style.setProperty("visibility", h[1], h[2]);
       else h[0].style.removeProperty("visibility");
     });
-    window.__brandkitRestore = null;
+    window.__easybrandkitRestore = null;
   };
   return hidden.length;
 }`;
@@ -631,7 +631,7 @@ async function isolateMark(cdp, mark, rect) {
 }
 
 async function restorePage(cdp) {
-  await cdp.send("Runtime.evaluate", { expression: "window.__brandkitRestore && window.__brandkitRestore()" }).catch(() => {});
+  await cdp.send("Runtime.evaluate", { expression: "window.__easybrandkitRestore && window.__easybrandkitRestore()" }).catch(() => {});
 }
 
 // A PNG text chunk that names the file a site's logo cut. Tools reading the
@@ -728,7 +728,7 @@ async function captureLogos(cdp, marks, dir, pageWidth, pageHeight) {
     } finally {
       if (isolated) await restorePage(cdp);
     }
-    const png = tagPng(Buffer.from(shot.data || "", "base64"), "Source", "brandkit logo");
+    const png = tagPng(Buffer.from(shot.data || "", "base64"), "Source", "easybrandkit logo");
     if (png.length < 33) continue;
     const color = logoInk(png, mark.background);
     const file = `logo-${String(written.length + 1).padStart(2, "0")}.png`;
