@@ -1,5 +1,5 @@
 {
-  "name": "brandkit",
+  "name": "@eminbudak/brandkit",
   "version": "0.1.0",
   "description": "Get a website's real logo files, colors, fonts and first screen as a brand kit your coding agent can read.",
   "license": "MIT",

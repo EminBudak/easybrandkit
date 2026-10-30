@@ -3,7 +3,7 @@
 Get a website's real logo files, colors, fonts and first screen, saved as a brand kit your coding agent can read.
 
 ```bash
-npx github:EminBudak/brandkit linear.app
+npx @eminbudak/brandkit linear.app
 ```
 
 ![The brand kit brandkit made from linear.app](.github/assets/linear-card.jpg)
@@ -60,7 +60,7 @@ The skill carries its own script, so it installs nothing else and needs no API k
 ## Use it from the command line
 
 ```
-npx github:EminBudak/brandkit <url> [options]
+npx @eminbudak/brandkit <url> [options]
 
   --out <dir>      where to save (default: ./brandkit-<host>)
   --no-stores      skip app store listings and social profiles
