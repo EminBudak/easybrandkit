@@ -47,7 +47,9 @@ test("App Store lookup: icon at 1024 px and screenshots at 1290 px wide, as PNG"
   });
   assert.equal(plan.name, "Acme");
   assert.equal(plan.by, "Acme Inc.");
-  assert.equal(plan.description.length, 600);
+  // The whole description, up to the stores' own 4000 characters.
+  assert.equal(plan.description.length, 900);
+  assert.equal(stores.appStorePlan({ results: [{ trackName: "Acme", description: "x".repeat(5000) }] }).description.length, 4000);
   assert.deepEqual(plan.images, [
     { kind: "icon", url: "https://is1-ssl.mzstatic.com/image/thumb/Purple/v4/a/b/AppIcon.png/1024x1024bb.png" },
     { kind: "screenshot", url: "https://is1-ssl.mzstatic.com/image/thumb/Src/v4/c/d/1.png/1290x2290bb.png" },
@@ -82,6 +84,10 @@ test("Google Play page: icon and screenshots by alt text, resized by suffix", ()
     { kind: "screenshot", url: "https://play-lh.googleusercontent.com/S1=w1440" },
     { kind: "screenshot", url: "https://play-lh.googleusercontent.com/S2=w1440" },
   ]);
+  // The listing's own text, whole and with its line breaks, over the short
+  // meta description.
+  const full = stores.playPlan(`${html}<div class="bARER" data-g-id="description">Learn &amp; play.<br><br>KEY FEATURES<br>• Short lessons<br>• Streaks</div>`);
+  assert.equal(full.description, "Learn & play.\n\nKEY FEATURES\n• Short lessons\n• Streaks");
 });
 
 test("Google Play page in another language: screenshots by their index, the title without the store's suffix", () => {

@@ -218,7 +218,9 @@ function appStorePlan(lookup) {
     category: app.primaryGenreName || "",
     rating: app.averageUserRating || null,
     ratings: app.userRatingCount || null,
-    description: String(app.description || "").slice(0, 600),
+    // The whole text (the stores allow 4000 characters): the feature list a
+    // video or a page wants comes after the first few hundred.
+    description: String(app.description || "").slice(0, 4000),
     images: [
       ...(app.artworkUrl512 ? [{ kind: "icon", url: resize(app.artworkUrl512, "1024x1024bb") }] : []),
       ...shots.map((shot) => {
@@ -249,6 +251,10 @@ function playPlan(html) {
   // The developer's website: the link with the "public" (globe) icon, whose
   // label is in the page's language ("Website", "Web sitesi").
   const site = decodeEntities((html.match(/<a\b[^>]*href="(https?:\/\/[^"]+)"[^>]*>\s*<i\b[^>]*>public<\/i>/i) || [])[1] || "");
+  // The listing's whole text, line breaks kept. The meta description stops
+  // short, before the feature list.
+  const body = (html.match(/<div\b[^>]*data-g-id="description"[^>]*>([\s\S]*?)<\/div>/i) || [])[1] || "";
+  const text = decodeEntities(body.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")).replace(/[ \t]+\n/g, "\n").trim();
   return {
     name: title,
     by: decodeEntities((html.match(/<a\b[^>]*href="\/store\/apps\/dev(?:eloper)?\?id=[^"]*"[^>]*>\s*(?:<span[^>]*>)?([^<]+)/i) || [])[1] || "").trim(),
@@ -256,7 +262,7 @@ function playPlan(html) {
     category: "",
     rating: null,
     ratings: null,
-    description: metaContent(html, "description").slice(0, 600),
+    description: (text || metaContent(html, "description")).slice(0, 4000),
     images: [
       ...(icon ? [{ kind: "icon", url: sized(icon, "=s1024") }] : []),
       ...shots.slice(0, MAX_SCREENSHOTS).map((raw) => ({ kind: "screenshot", url: sized(raw, "=w1440") })),
