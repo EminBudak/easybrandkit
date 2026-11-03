@@ -3,7 +3,7 @@
 Get a website's real logo files, colors, fonts and first screen, saved as a brand kit your coding agent can read.
 
 ```bash
-npx easybrandkit linear.app
+npx easybrandkit@latest linear.app
 ```
 
 ![The brand kit easybrandkit made from linear.app](.github/assets/linear-card.jpg)
@@ -73,7 +73,7 @@ npx easybrandkit <url> [options]
 
 The address can be a website or an App Store or Google Play listing. A listing gives the app icon and screenshots, and the brand is read from the website the listing names. A social profile is not a brand's site, so easybrandkit refuses one and asks for the website.
 
-Installed globally (`npm install -g easybrandkit`), the command is `easybrandkit`.
+Installed globally (`npm install -g easybrandkit`), the command is `easybrandkit`. npx keeps the copy an earlier run fetched, so `npx easybrandkit@latest` is how you get a newer version.
 
 It needs Node 22 or newer and Chrome, Chromium, Edge or Brave. Set `CHROME_PATH` to pick the browser. There are no npm dependencies and nothing is downloaded: easybrandkit drives the browser you already have over the Chrome DevTools Protocol, with a throwaway profile.
 
@@ -82,7 +82,7 @@ It needs Node 22 or newer and Chrome, Chromium, Edge or Brave. Set `CHROME_PATH`
 [claude-code-video-toolkit](https://github.com/digitalsamba/claude-code-video-toolkit) keeps each brand in `brands/<name>/`. Make a kit in the toolkit's folder, then start `/brand` and point it at the kit:
 
 ```bash
-npx easybrandkit stripe.com --out brand-kit
+npx easybrandkit@latest stripe.com --out brand-kit
 ```
 
 ```
