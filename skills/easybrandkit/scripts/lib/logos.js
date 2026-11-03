@@ -710,7 +710,8 @@ async function bringIntoView(cdp, mark) {
 
 // The logo as a vector file, run in the page. With no text, `this` is an
 // inline <svg>: it is copied with the page's styles written onto every part
-// (a class in the site's stylesheet, currentColor), without the parts the
+// as plain attributes (a class in the site's stylesheet, currentColor and
+// CSS variables resolved to the colors they came to), without the parts the
 // page hides, and with the symbols and gradients it uses from elsewhere in
 // the page. With text, the text is the SVG file an <img> showed, kept as it
 // is. Either way scripts, event handlers and embedded HTML are dropped and
@@ -738,26 +739,49 @@ const SVG_FILE = `function (text, base) {
       for (var p = el.parentNode; p && p !== source; p = p.parentNode) if (NOT_DRAWN.test(String(p.localName).toLowerCase())) return true;
       return false;
     };
+    // Each part's look goes on as plain attributes (fill="#f7f8f8"), which
+    // tools reading SVG outside a browser understand. A style attribute over
+    // fill="currentColor" left one importer guessing, and Linear's white logo
+    // came out black. The root says where it differs from the SVG defaults,
+    // a group where it differs from its parent, and every shape carries its
+    // own fill and stroke, for readers that skip what the root passes down.
+    var DRAWN = /^(path|rect|circle|ellipse|line|polyline|polygon|text|tspan|textpath|use)$/;
+    var PAINT = /^(fill|stroke)/;
+    var INITIAL = { "fill": "rgb(0, 0, 0)", "fill-opacity": "1", "fill-rule": "nonzero", "stroke": "none", "stroke-width": "1px", "stroke-opacity": "1", "stroke-linecap": "butt", "stroke-linejoin": "miter", "stroke-miterlimit": "4", "stroke-dasharray": "none", "stroke-dashoffset": "0px", "visibility": "visible", "clip-rule": "nonzero", "font-style": "normal", "font-weight": "400", "font-size": "16px", "letter-spacing": "normal", "text-anchor": "start", "dominant-baseline": "auto", "paint-order": "normal" };
+    var TYPE = /^(font-|letter-spacing|text-anchor|dominant-baseline)/;
+    var hex = function (v) {
+      var m = /^rgb\\((\\d+), (\\d+), (\\d+)\\)$/.exec(v);
+      return m ? "#" + [m[1], m[2], m[3]].map(function (n) { return ("0" + Number(n).toString(16)).slice(-2); }).join("") : v;
+    };
+    var hasText = source.getElementsByTagName("text").length > 0;
     var gone = [];
     for (var i = 0; i < from.length; i++) {
       var cs = getComputedStyle(from[i]);
       if (i > 0 && cs.display === "none" && !unused(from[i])) { gone.push(to[i]); continue; }
       var up = i > 0 ? getComputedStyle(from[i].parentNode) : null;
-      var style = [];
+      var look = {};
+      var drawn = i > 0 && DRAWN.test(String(from[i].localName).toLowerCase());
       INHERITED.forEach(function (prop) {
         var v = cs.getPropertyValue(prop);
-        if (v && (!up || up.getPropertyValue(prop) !== v)) style.push(prop + ":" + local(v));
+        if (!v || (TYPE.test(prop) && !hasText)) return;
+        var differs = drawn && PAINT.test(prop) ? INITIAL[prop] !== v : up ? up.getPropertyValue(prop) !== v : prop === "color" || INITIAL[prop] !== v;
+        if (differs) look[prop] = v;
       });
       Object.keys(OWN).forEach(function (prop) {
         var v = cs.getPropertyValue(prop);
-        if (v && v !== OWN[prop]) style.push(prop + ":" + local(v));
+        if (v && v !== OWN[prop]) look[prop] = v;
       });
-      if (style.length) to[i].setAttribute("style", style.join(";"));
-      else to[i].removeAttribute("style");
-      // fill="var(--text)" means nothing outside the page; the value it had
-      // is in the style above, or comes from the parent.
+      // What the page set (a class, fill="currentColor", fill="var(--text)")
+      // is replaced by what it came to.
+      INHERITED.concat(Object.keys(OWN)).forEach(function (prop) { to[i].removeAttribute(prop); });
       [].slice.call(to[i].attributes).forEach(function (at) {
-        if (at.name !== "style" && at.value.indexOf("var(") !== -1) to[i].removeAttribute(at.name);
+        if (at.value.indexOf("var(") !== -1) to[i].removeAttribute(at.name);
+      });
+      to[i].removeAttribute("style");
+      Object.keys(look).forEach(function (prop) {
+        var v = hex(local(look[prop]));
+        if (prop === "mix-blend-mode") to[i].setAttribute("style", prop + ":" + v);
+        else to[i].setAttribute(prop, v);
       });
     }
     gone.forEach(function (el) { if (el.parentNode) el.parentNode.removeChild(el); });

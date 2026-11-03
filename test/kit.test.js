@@ -242,7 +242,7 @@ test("logos: the site's own marks on their real background, plus colors, fonts, 
     // Both are drawn as SVG: the inline one is written out, the image is the
     // file as the browser loaded it.
     assert.deepEqual(kit.logos.map((l) => [l.svg, l.onPicture]), [["logo-01.svg", false], ["logo-02.svg", false]]);
-    assert.match(fs.readFileSync(path.join(dir, "logo-01.svg"), "utf8"), /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg".*<rect [^>]*fill="rgb\(255,0,0\)"/s);
+    assert.match(fs.readFileSync(path.join(dir, "logo-01.svg"), "utf8"), /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg".*<rect [^>]*fill="#ff0000"/s);
     assert.equal(fs.readFileSync(path.join(dir, "logo-02.svg"), "utf8"), files["/acme-logo-light.svg"] + "\n");
 
     const header = readPng(path.join(dir, "logo-01.png"));
@@ -395,6 +395,7 @@ test("logos: a lockup on a picture is not the logo; the vector keeps the page's 
     <style>
       body{margin:0;background:#fff}
       header.top{height:80px;display:flex;align-items:center;padding-left:40px;background:repeating-linear-gradient(90deg,rgb(30,30,30) 0 6px,rgb(220,220,220) 6px 12px)}
+      .mark{fill:rgb(20,120,90)}
       .mark .ink{fill:rgb(83,58,253)}
       .mark .narrow{display:none}
       .promo{margin-top:300px;height:300px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(90deg,rgb(10,4,32) 0 7px,rgb(122,44,255) 7px 14px)}
@@ -402,7 +403,7 @@ test("logos: a lockup on a picture is not the logo; the vector keeps the page's 
       footer{height:200px;background:rgb(29,36,62);display:flex;align-items:center;padding-left:20px}
     </style></head><body>
     <svg width="0" height="0" style="position:absolute"><symbol id="dot" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></symbol></svg>
-    <header class="top"><a href="/" aria-label="Acme home"><svg class="mark" width="160" height="40" viewBox="0 0 160 40" onload="window.loaded=1"><script>window.ran=1</script><rect class="ink" width="120" height="40"/><rect class="narrow" width="40" height="40" fill="rgb(0,255,0)"/><use href="#dot" x="130" y="10" width="20" height="20" fill="currentColor" style="color:rgb(255,0,0)"/></svg></a></header>
+    <header class="top"><a href="/" aria-label="Acme home"><svg class="mark" width="160" height="40" viewBox="0 0 160 40" onload="window.loaded=1"><script>window.ran=1</script><rect class="ink" width="120" height="40"/><rect class="narrow" width="40" height="40" fill="rgb(0,255,0)"/><use href="#dot" x="130" y="10" width="20" height="20" fill="currentColor" style="color:rgb(255,0,0)"/><circle cx="150" cy="35" r="4"/></svg></a></header>
     <section class="promo"><a href="/sessions" aria-label="Acme Sessions"><svg class="sessions-logo" width="300" height="60"><rect width="300" height="60" fill="rgb(255,255,255)"/></svg></a></section>
     <main></main>
     <footer><a href="/">${svg("rgb(255,255,255)", 140, 36)}</a></footer>
@@ -417,8 +418,10 @@ test("logos: a lockup on a picture is not the logo; the vector keeps the page's 
 
     const vector = fs.readFileSync(path.join(dir, "logo-01.svg"), "utf8");
     assert.match(vector, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
-    assert.match(vector, /<rect class="ink"[^>]*style="[^"]*fill:rgb\(83, 58, 253\)/, "the stylesheet's fill, written onto the part");
-    assert.match(vector, /<use [^>]*style="[^"]*fill:rgb\(255, 0, 0\)/, "currentColor, resolved");
+    assert.match(vector, /<rect class="ink"[^>]*fill="#533afd"/, "the stylesheet's fill, written onto the part");
+    assert.match(vector, /<use [^>]*fill="#ff0000"/, "currentColor, resolved");
+    assert.match(vector, /<circle [^>]*fill="#14785a"/, "a shape carries the fill the root passes down");
+    assert.doesNotMatch(vector, /currentColor|style=/, "plain attributes only, nothing left to resolve");
     assert.match(vector, /<defs><symbol id="dot"/, "the symbol it uses, brought in");
     assert.doesNotMatch(vector, /narrow|0,255,0/, "the part the page hides");
     assert.doesNotMatch(vector, /<script|onload|window\./, "nothing that runs");
