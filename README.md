@@ -54,6 +54,12 @@ That covers Claude Code, Codex, Cursor and the other agents the [`skills`](https
 /plugin install easybrandkit@easybrandkit
 ```
 
+In GitHub Copilot CLI, install it from the repo:
+
+```bash
+copilot plugin install EminBudak/easybrandkit
+```
+
 Then ask as usual:
 
 > Make a 30 second launch video for linear.app
