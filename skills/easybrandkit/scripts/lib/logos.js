@@ -455,7 +455,13 @@ function brandLook(names, parents, attrs, boxOf, styleOf, pageWidth, pageHeight)
   push("header", [header]);
   push("footer", [footer]);
   push("surface", top("surface", 3));
-  return { colors: colors.slice(0, 8), fonts };
+  // The page's own ground: the solid color that covers most of it, when it
+  // covers at least half. A page left on the browser's white has none, nor
+  // has one whose largest colored area is a band across a white page. The
+  // list above can file this color under the header or footer instead.
+  const [ground] = [...(tally.get("surface") || new Map()).entries()].sort((p, q) => q[1] - p[1]);
+  const background = ground && ground[1] >= pageWidth * pageHeight * 0.5 ? ground[0] : "";
+  return { colors: colors.slice(0, 8), fonts, background };
 }
 
 // The page's own words, for copy that has to say what the product is: its

@@ -24,7 +24,7 @@ node <skill>/scripts/easybrandkit.js <url> --out brand/<name>
 5. "Words on the page" holds the product's own title, description, headings and button labels. Write headlines and feature lines from them; do not invent claims, numbers or customers the page does not state.
 6. `screen-01.png` is the site's first screen at 2x. Use it as a reference for the look, or as the screenshot inside a browser or device frame.
 7. For an app, use the store icon and screenshots (`appstore-*`, `googleplay-*`) as they are.
-8. `brand.json` holds the same facts for scripts, with every file's size.
+8. `brand.json` holds the same facts for scripts, with every file's size. `_brand.yml` holds the name, logo, colors and fonts in the brand.yml format: for a Quarto document, website or deck, set `brand: brand/<name>/_brand.yml` in its YAML; for a Shiny for Python app, pass that path to `ui.Theme.from_brand()`.
 9. `card.png` shows the whole kit on one picture. Show it to the user before you build on the kit, so they can see that the logo and colors are right.
 
 ## When it goes wrong

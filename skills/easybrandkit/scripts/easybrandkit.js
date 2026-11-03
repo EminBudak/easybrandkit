@@ -9,7 +9,8 @@ const USAGE = `Usage: easybrandkit <url> [options]
 Reads a website the way a browser draws it and saves its brand in one
 folder: the logo files, colors, fonts, the first screen, and the app store
 icon and screenshots when the site links to its apps. brand.json is for
-tools, BRAND.md for people and coding agents.
+tools, BRAND.md for people and coding agents, _brand.yml for Quarto and
+Shiny.
 
 Options:
   --out <dir>      where to save (default: ./easybrandkit-<host>)
@@ -59,7 +60,7 @@ function summary({ dir, kit }) {
   const sources = kit.stores.filter((source) => source.ok);
   if (sources.length) lines.push(`  Stores  ${list(sources.map((source) => `${source.type}: ${source.assets.length} file${source.assets.length === 1 ? "" : "s"}`))}`);
   for (const note of kit.notes) lines.push(`  Note    ${note}`);
-  lines.push("", `Read ${dir}/BRAND.md for the details.`);
+  lines.push("", `Read ${dir}/BRAND.md for the details. ${dir}/_brand.yml is the kit for Quarto and Shiny.`);
   return lines.join("\n");
 }
 

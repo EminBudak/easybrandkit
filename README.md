@@ -18,6 +18,7 @@ Read the story behind it on my blog: [easybrandkit: A Brand Kit for Coding Agent
 easybrandkit-linear.app/
   BRAND.md               the kit, for people and agents
   brand.json             the same, for scripts
+  _brand.yml             the name, logo, colors and fonts for Quarto and Shiny
   card.png               the kit on one picture, like the one above
   logo-01.png            the header logo, on its real background
   logo-01.svg            the same logo as a vector, when the page draws it as SVG
@@ -96,6 +97,20 @@ npx easybrandkit@latest stripe.com --out brand-kit
 ```
 
 `/brand` shows how it mapped the colors for you to confirm, then writes `brand.json` and the logo files. The toolkit's templates put the logo on their own backgrounds, so point `/brand` at the kit's `.svg` logo when there is one, or ask for a transparent cut of the PNG.
+
+## With Quarto and Shiny
+
+Every kit has a `_brand.yml` in the [brand.yml](https://posit-dev.github.io/brand-yml/) format, which Quarto and Shiny read to theme documents, websites, slides and apps. It holds the brand's name and site, its logos (each as the SVG when the page draws one, else as the PNG), the page's colors named for where it uses them, and the font families for text and headings. The `medium` logo, the one Quarto puts in a navbar, on slides and in a PDF, is the site's own header or footer logo that shows on the page's background. The button color becomes `primary`, and the page's own background and text colors become `background` and `foreground`. A family on Google Fonts gets `source: google`, so Quarto and Shiny load it from there. Any other font keeps its name as a system font and shows only where it is installed. A color or font the page doesn't show is left out, so Quarto and Shiny keep their own default for it.
+
+Point a Quarto project at the kit in `_quarto.yml`, or a single document in its front matter:
+
+```yaml
+brand: easybrandkit-stripe.com/_brand.yml
+```
+
+A Quarto website paints its navbar in the `primary` color. For a dark logo like Stripe's, `background: light` under `website: navbar:` keeps it readable.
+
+In Shiny for Python, `ui.Theme.from_brand("easybrandkit-stripe.com/_brand.yml")` makes the theme, and Shiny for R reads the same file through bslib. You can also copy `_brand.yml` to the root of the project or app, together with the logo files it names.
 
 ## How it works
 

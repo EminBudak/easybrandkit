@@ -143,6 +143,7 @@ test("never writes into a folder that holds someone else's files", () => {
     // An earlier kit is replaced, by file name only.
     fs.rmSync(path.join(dir, "notes.txt"));
     fs.writeFileSync(path.join(dir, "logo-01.png"), "old");
+    fs.writeFileSync(path.join(dir, "_brand.yml"), "meta:\n  name: Old\n");
     fs.writeFileSync(path.join(dir, "brand.json"), JSON.stringify({ version: 1, logos: [{ file: "../../escape.png" }, { file: "logo-01.png" }] }));
     prepareDir(dir);
     assert.deepEqual(fs.readdirSync(dir), []);
@@ -314,6 +315,13 @@ test("logos: the site's own marks on their real background, plus colors, fonts, 
     assert.match(markdown, /^# Acme brand kit/);
     assert.match(markdown, /\| `#3f56c8` \| buttons \|/);
     assert.match(markdown, /\| logo-02\.png \| footer \| `#1d243e` \| \d+x\d+ \| logo-02\.svg \|/);
+    // The same kit for Quarto and Shiny: the white page under everything is
+    // its background even though the list files white under the header.
+    const yml = fs.readFileSync(path.join(dir, "_brand.yml"), "utf8");
+    assert.match(yml, /^meta:\n {2}name: Acme\n {2}link: "http:\/\/127\.0\.0\.1:\d+\/"\n$/m);
+    assert.ok(yml.includes(["logo:", "  images:", "    logo-01: logo-01.svg", "    logo-02:", "      path: logo-02.svg", "      alt: Acme", "  medium: logo-01", ""].join("\n")), yml);
+    assert.ok(yml.includes(['    header: "#ffffff"', '    footer: "#1d243e"', '    surface: "#f0f0f0"', '  foreground: "#0f172a"', '  background: "#ffffff"', '  primary: "#3f56c8"', ""].join("\n")), yml);
+    assert.ok(yml.includes(["    - family: Georgia", "      source: system", "  base: Verdana", "  headings: Georgia", "  link:", '    color: "#dc2626"', ""].join("\n")), yml);
   } finally {
     server.close();
     fs.rmSync(path.dirname(dir), { recursive: true, force: true });

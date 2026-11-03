@@ -6,6 +6,8 @@
 //
 //   brand.json     everything below, for tools
 //   BRAND.md       the same, for people and coding agents
+//   _brand.yml     the name, logo, colors and fonts for Quarto and Shiny,
+//                  in the brand.yml format
 //   logo-01.png …  the site's own logos as it draws them, each cut on its
 //                  real background (no transparency, short side >= 240 px),
 //                  header marks first
@@ -23,6 +25,7 @@ const { launch, openPage, navigate } = require("./chrome");
 const { metrics, walk, waitForContent, hideOverlays, resetPictureWait, capture } = require("./page");
 const { findLogos, captureLogos, readWords } = require("./logos");
 const { renderCard } = require("./card");
+const { brandYml } = require("./brandyml");
 const { classify, readSource } = require("./stores");
 const { setTimeLimit, timeLeft, sleep } = require("./time");
 const version = require("./version");
@@ -100,7 +103,7 @@ function prepareDir(dir) {
   if (!old || old.version !== 1) {
     throw new Error(`${dir} is not empty and holds no earlier brand kit. Pick another folder with --out.`);
   }
-  for (const file of [...kitFiles(old), "brand.json", "BRAND.md"]) fs.rmSync(path.join(dir, file), { force: true });
+  for (const file of [...kitFiles(old), "brand.json", "BRAND.md", "_brand.yml"]) fs.rmSync(path.join(dir, file), { force: true });
 }
 
 // The site's name: og:site_name, else the title up to its first separator
@@ -376,6 +379,9 @@ async function makeKit(rawUrl, { dir, stores = true, timeLimit = 120_000, log = 
   };
   fs.writeFileSync(path.join(target, "brand.json"), JSON.stringify(kit, null, 2) + "\n");
   writeMarkdown(kit, target);
+  // The page's ground is not in brand.json: its list of colors can file
+  // that color under the header or footer.
+  fs.writeFileSync(path.join(target, "_brand.yml"), brandYml(kit, { background: found.brand.background || "", site: read ? read.pageUrl : "" }));
   return { dir: target, kit };
 }
 
