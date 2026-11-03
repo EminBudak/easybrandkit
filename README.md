@@ -77,6 +77,20 @@ Installed globally (`npm install -g easybrandkit`), the command is `easybrandkit
 
 It needs Node 22 or newer and Chrome, Chromium, Edge or Brave. Set `CHROME_PATH` to pick the browser. There are no npm dependencies and nothing is downloaded: easybrandkit drives the browser you already have over the Chrome DevTools Protocol, with a throwaway profile.
 
+## With claude-code-video-toolkit
+
+[claude-code-video-toolkit](https://github.com/digitalsamba/claude-code-video-toolkit) keeps each brand in `brands/<name>/`. Make a kit in the toolkit's folder, then start `/brand` and point it at the kit:
+
+```bash
+npx easybrandkit stripe.com --out brand-kit
+```
+
+```
+/brand New brand: Stripe. The kit is in brand-kit/, use it for the colors, the fonts and the logo.
+```
+
+`/brand` shows how it mapped the colors for you to confirm, then writes `brand.json` and the logo files. The toolkit's templates put the logo on their own backgrounds, so point `/brand` at the kit's `.svg` logo when there is one, or ask for a transparent cut of the PNG.
+
 ## How it works
 
 1. Opens the home page in a headless browser on a 1600x900 desktop screen. An address deeper in the site is read from the home page, because a blog or a help center often wears another theme.
