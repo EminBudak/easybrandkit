@@ -49,7 +49,8 @@ function parse(argv) {
 function summary({ dir, kit }) {
   const list = (items) => items.join(", ") || "none found";
   const lines = [`Saved the ${kit.name} brand kit to ${dir}`, ""];
-  lines.push(`  Logos   ${list(kit.logos.map((logo) => `${logo.file} (${logo.where}, on ${logo.background})`))}`);
+  const logoLine = (logo) => `${logo.file}${logo.svg ? ` and ${logo.svg}` : ""} (${logo.where}, on ${logo.onPicture ? `a picture, mostly ${logo.background}` : logo.background})`;
+  lines.push(`  Logos   ${list(kit.logos.map(logoLine))}`);
   lines.push(`  Colors  ${list(kit.colors.map((color) => `${color.hex} ${color.role}`))}`);
   const fonts = [kit.fonts.heading && `${kit.fonts.heading} (headings)`, kit.fonts.body && `${kit.fonts.body} (body)`].filter(Boolean);
   lines.push(`  Fonts   ${list(fonts)}`);

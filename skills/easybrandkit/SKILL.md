@@ -19,7 +19,7 @@ node <skill>/scripts/easybrandkit.js <url> --out brand/<name>
 
 1. Read `brand/<name>/BRAND.md` before you write any code, copy or image prompt.
 2. Use the hex values as given. The `button` color is what the site uses for its main actions, `logo` is the color its logo is drawn in, `heading` and `link` are its text colors, and `header`, `footer` and `surface` are its backgrounds.
-3. Use the logo PNG files as they are. Do not redraw, recolor, retype or crop a logo. Each one is cut on the background it sits on (listed next to the file), so place it on that color or one close to it.
+3. Use the logo files as they are. Do not redraw, recolor, retype or crop a logo. Each PNG is cut on the background it sits on (listed next to the file), so place it on that color or one close to it. A `.svg` listed next to a logo is the same logo as a vector with no background: use it when the logo has to sit on another color or be shown large. A logo listed on "a picture" was cut with part of a photo or pattern around it, so prefer its `.svg` when it has one.
 4. Use the font families named. If one is not available to you, pick the closest free font and tell the user which one you used.
 5. "Words on the page" holds the product's own title, description, headings and button labels. Write headlines and feature lines from them; do not invent claims, numbers or customers the page does not state.
 6. `screen-01.png` is the site's first screen at 2x. Use it as a reference for the look, or as the screenshot inside a browser or device frame.

@@ -9,6 +9,7 @@
 //   logo-01.png …  the site's own logos as it draws them, each cut on its
 //                  real background (no transparency, short side >= 240 px),
 //                  header marks first
+//   logo-01.svg …  the same logo as a vector, when the page draws it as SVG
 //   screen-01.png  the first screen as a visitor sees it, at 2x, without
 //                  cookie bars and chat bubbles
 //   card.png       the kit on one picture: logos, colors, fonts, first screen
@@ -76,7 +77,7 @@ function homePageOf(raw) {
 // cannot point the clean-up outside the folder.
 function kitFiles(kit) {
   const files = [
-    ...[].concat(kit.logos || []).map((logo) => logo && logo.file),
+    ...[].concat(kit.logos || []).flatMap((logo) => [logo && logo.file, logo && logo.svg]),
     ...[].concat(kit.screenshots || []).map((shot) => shot && shot.file),
     kit.card && kit.card.file,
     ...[].concat(kit.stores || []).flatMap((source) => [].concat((source && source.assets) || []).map((asset) => asset && asset.file)),
@@ -240,9 +241,14 @@ function writeMarkdown(kit, dir) {
   }
   lines.push("## Logos", "");
   if (kit.logos.length) {
-    lines.push("| File | Where | Background | Size |", "| --- | --- | --- | --- |");
-    for (const logo of kit.logos) lines.push(`| ${logo.file} | ${logo.where} | \`${logo.background}\` | ${logo.width}x${logo.height} |`);
+    lines.push("| File | Where | Background | Size | Vector |", "| --- | --- | --- | --- | --- |");
+    for (const logo of kit.logos) {
+      const ground = logo.onPicture ? `a picture, mostly \`${logo.background}\`` : `\`${logo.background}\``;
+      lines.push(`| ${logo.file} | ${logo.where} | ${ground} | ${logo.width}x${logo.height} | ${logo.svg || ""} |`);
+    }
     lines.push("", "Each logo is cut from the page on the background it sits on, so it has no transparency. Use the files as they are; place a logo on its own background color or one close to it.");
+    if (kit.logos.some((logo) => logo.onPicture)) lines.push("A logo on a picture was cut with part of that picture around it.");
+    if (kit.logos.some((logo) => logo.svg)) lines.push("", "A .svg file is the same logo as the page draws it, as a vector with no background: use it to place the logo on another color or at a larger size.");
   } else {
     lines.push("No logo found on the page. The icons and images below may still show it.");
   }
@@ -290,7 +296,7 @@ function siteOfListing(raw) {
 
 // A failed run leaves nothing half made: its own files go, and so does the
 // folder when this run created it.
-const RUN_FILE = /^((logo|screen)-\d+\.png|card\.png|(appstore|googleplay|x|youtube|linkedin|threads|pinterest)-(icon|profile|shot-\d+)\.(png|jpg|webp))$/;
+const RUN_FILE = /^((logo|screen)-\d+\.png|logo-\d+\.svg|card\.png|(appstore|googleplay|x|youtube|linkedin|threads|pinterest)-(icon|profile|shot-\d+)\.(png|jpg|webp))$/;
 function cleanUp(target, existed) {
   for (const file of fs.readdirSync(target)) if (RUN_FILE.test(file)) fs.rmSync(path.join(target, file), { force: true });
   if (!existed) {

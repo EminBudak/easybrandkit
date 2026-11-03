@@ -14,6 +14,7 @@ const { spawnSync } = require("node:child_process");
 const test = require("node:test");
 const { makeKit, normalizeUrl, homePageOf, siteOfListing, prepareDir, brandName } = require("../skills/easybrandkit/scripts/lib/kit");
 const { findChrome } = require("../skills/easybrandkit/scripts/lib/chrome");
+const { groundOf } = require("../skills/easybrandkit/scripts/lib/logos");
 
 const CLI = path.resolve(__dirname, "../skills/easybrandkit/scripts/easybrandkit.js");
 const noBrowser = !findChrome() && "no Chrome, Chromium, Edge or Brave installed";
@@ -61,6 +62,36 @@ function readPng(file) {
     }
   }
   return { width, height, pixel: (x, y) => [...pixels.subarray(y * stride + x * channels, y * stride + x * channels + 3)] };
+}
+
+// Minimal PNG writer: 8-bit RGB, each row unfiltered.
+function pngOf(width, height, color) {
+  const crc = (buf) => {
+    let c = 0xffffffff;
+    for (const byte of buf) {
+      c ^= byte;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    }
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const out = Buffer.alloc(12 + data.length);
+    out.writeUInt32BE(data.length, 0);
+    out.write(type, 4, "ascii");
+    data.copy(out, 8);
+    out.writeUInt32BE(crc(out.subarray(4, 8 + data.length)), 8 + data.length);
+    return out;
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = 2;
+  const raw = Buffer.alloc(height * (width * 3 + 1));
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) Buffer.from(color(x, y)).copy(raw, y * (width * 3 + 1) + 1 + x * 3);
+  }
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", header), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
 }
 
 async function serve(handler) {
@@ -122,6 +153,19 @@ test("never writes into a folder that holds someone else's files", () => {
 
 test("the skill folder carries its own version, the same as the package's", () => {
   assert.equal(require("../skills/easybrandkit/scripts/lib/version"), require("../package.json").version);
+});
+
+test("a cut's ground comes from its pixels: one color, or a picture", () => {
+  const navy = [29, 36, 62];
+  const solid = pngOf(60, 40, (x, y) => (x > 20 && x < 40 && y > 12 && y < 28 ? [255, 0, 0] : navy));
+  assert.deepEqual(groundOf(solid, 4), { hex: "#1d243e", solid: true });
+  const stripes = pngOf(60, 40, (x) => (x % 8 < 4 ? [10, 4, 32] : [122, 44, 255]));
+  assert.equal(groundOf(stripes, 4).solid, false);
+  // A mark at the page's left edge has no margin there: that side is not read.
+  const edge = pngOf(60, 40, (x) => (x < 4 ? [0, 0, 0] : [255, 255, 255]));
+  assert.equal(groundOf(edge, 4).solid, false);
+  assert.deepEqual(groundOf(edge, 4, { top: true, right: true, bottom: true, left: false }), { hex: "#ffffff", solid: true });
+  assert.equal(groundOf(Buffer.from("not a png"), 4), null);
 });
 
 test("the CLI explains itself and refuses a missing address", () => {
@@ -195,6 +239,11 @@ test("logos: the site's own marks on their real background, plus colors, fonts, 
     assert.deepEqual(kit.logos.map((l) => [l.file, l.where, l.kind]), [["logo-01.png", "header", "svg"], ["logo-02.png", "footer", "img"]], JSON.stringify(kit.logos));
     assert.equal(kit.logos[1].src, `${origin}/acme-logo-light.svg`);
     assert.equal(kit.logos[1].background, "#1d243e");
+    // Both are drawn as SVG: the inline one is written out, the image is the
+    // file as the browser loaded it.
+    assert.deepEqual(kit.logos.map((l) => [l.svg, l.onPicture]), [["logo-01.svg", false], ["logo-02.svg", false]]);
+    assert.match(fs.readFileSync(path.join(dir, "logo-01.svg"), "utf8"), /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg".*<rect [^>]*fill="rgb\(255,0,0\)"/s);
+    assert.equal(fs.readFileSync(path.join(dir, "logo-02.svg"), "utf8"), files["/acme-logo-light.svg"] + "\n");
 
     const header = readPng(path.join(dir, "logo-01.png"));
     const footer = readPng(path.join(dir, "logo-02.png"));
@@ -264,7 +313,7 @@ test("logos: the site's own marks on their real background, plus colors, fonts, 
     const markdown = fs.readFileSync(path.join(dir, "BRAND.md"), "utf8");
     assert.match(markdown, /^# Acme brand kit/);
     assert.match(markdown, /\| `#3f56c8` \| buttons \|/);
-    assert.match(markdown, /\| logo-02\.png \| footer \| `#1d243e` \|/);
+    assert.match(markdown, /\| logo-02\.png \| footer \| `#1d243e` \| \d+x\d+ \| logo-02\.svg \|/);
   } finally {
     server.close();
     fs.rmSync(path.dirname(dir), { recursive: true, force: true });
@@ -317,6 +366,9 @@ test("logos: the mark alone, as it stands once settled: no neighbour cut by the 
   try {
     const { kit } = await makeKit(origin, { dir, stores: false });
     assert.equal(kit.logos[0].where, "header", JSON.stringify(kit.logos));
+    // The page's CSS has white under the logo; the cut shows the hero.
+    assert.equal(kit.logos[0].background, "#0a3c28");
+    assert.equal(kit.logos[0].onPicture, false);
     const header = readPng(path.join(dir, kit.logos[0].file));
     assert.deepEqual(header.pixel(header.width >> 1, header.height >> 1), [255, 255, 255], "the logo, whole and opaque");
     assert.deepEqual(header.pixel(2, 2), [10, 60, 40], "the hero behind it, not dimmed");
@@ -326,6 +378,54 @@ test("logos: the mark alone, as it stands once settled: no neighbour cut by the 
         assert.ok(!(r > 150 && g < 80 && b < 80), `the red line under the logo at ${x},${y}`);
       }
     }
+  } finally {
+    server.close();
+    fs.rmSync(path.dirname(dir), { recursive: true, force: true });
+  }
+});
+
+test("logos: a lockup on a picture is not the logo; the vector keeps the page's look and nothing that runs", { skip: noBrowser }, async () => {
+  // A header logo over a striped header (kept, on a picture) whose parts are
+  // colored by the page's stylesheet, with a part the page hides, a symbol it
+  // takes from a sprite elsewhere in the page, a script and an event handler.
+  // In the page body, the brand's event lockup over a striped banner (not
+  // kept). A white logo in a solid navy footer.
+  const html = `<!doctype html><html><head>
+    <meta property="og:site_name" content="Acme">
+    <style>
+      body{margin:0;background:#fff}
+      header.top{height:80px;display:flex;align-items:center;padding-left:40px;background:repeating-linear-gradient(90deg,rgb(30,30,30) 0 6px,rgb(220,220,220) 6px 12px)}
+      .mark .ink{fill:rgb(83,58,253)}
+      .mark .narrow{display:none}
+      .promo{margin-top:300px;height:300px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(90deg,rgb(10,4,32) 0 7px,rgb(122,44,255) 7px 14px)}
+      main{height:1200px}
+      footer{height:200px;background:rgb(29,36,62);display:flex;align-items:center;padding-left:20px}
+    </style></head><body>
+    <svg width="0" height="0" style="position:absolute"><symbol id="dot" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></symbol></svg>
+    <header class="top"><a href="/" aria-label="Acme home"><svg class="mark" width="160" height="40" viewBox="0 0 160 40" onload="window.loaded=1"><script>window.ran=1</script><rect class="ink" width="120" height="40"/><rect class="narrow" width="40" height="40" fill="rgb(0,255,0)"/><use href="#dot" x="130" y="10" width="20" height="20" fill="currentColor" style="color:rgb(255,0,0)"/></svg></a></header>
+    <section class="promo"><a href="/sessions" aria-label="Acme Sessions"><svg class="sessions-logo" width="300" height="60"><rect width="300" height="60" fill="rgb(255,255,255)"/></svg></a></section>
+    <main></main>
+    <footer><a href="/">${svg("rgb(255,255,255)", 140, 36)}</a></footer>
+  </body></html>`;
+  const { server, origin } = await serve((req, res) => res.writeHead(200, { "content-type": "text/html" }).end(html));
+  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "easybrandkit-out-")), "kit");
+  try {
+    const { kit } = await makeKit(origin, { dir, stores: false });
+    assert.deepEqual(kit.logos.map((l) => [l.where, l.onPicture, l.svg]), [["header", true, "logo-01.svg"], ["footer", false, "logo-02.svg"]], JSON.stringify(kit.logos));
+    assert.equal(kit.logos[0].color, "", "no logo color read off a picture");
+    assert.equal(kit.logos[1].background, "#1d243e");
+
+    const vector = fs.readFileSync(path.join(dir, "logo-01.svg"), "utf8");
+    assert.match(vector, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+    assert.match(vector, /<rect class="ink"[^>]*style="[^"]*fill:rgb\(83, 58, 253\)/, "the stylesheet's fill, written onto the part");
+    assert.match(vector, /<use [^>]*style="[^"]*fill:rgb\(255, 0, 0\)/, "currentColor, resolved");
+    assert.match(vector, /<defs><symbol id="dot"/, "the symbol it uses, brought in");
+    assert.doesNotMatch(vector, /narrow|0,255,0/, "the part the page hides");
+    assert.doesNotMatch(vector, /<script|onload|window\./, "nothing that runs");
+
+    const markdown = fs.readFileSync(path.join(dir, "BRAND.md"), "utf8");
+    assert.match(markdown, /\| logo-01\.png \| header \| a picture, mostly `#[0-9a-f]{6}` \| \d+x\d+ \| logo-01\.svg \|/);
+    assert.match(markdown, /A logo on a picture was cut with part of that picture around it\./);
   } finally {
     server.close();
     fs.rmSync(path.dirname(dir), { recursive: true, force: true });

@@ -20,6 +20,7 @@ easybrandkit-linear.app/
   brand.json             the same, for scripts
   card.png               the kit on one picture, like the one above
   logo-01.png            the header logo, on its real background
+  logo-01.svg            the same logo as a vector, when the page draws it as SVG
   logo-02.png            the footer logo
   screen-01.png          the first screen at 2x, without the cookie bar
   appstore-icon.png      the app icon at 1024 px, when the site links to its app
@@ -27,7 +28,7 @@ easybrandkit-linear.app/
   x-profile.jpg          the profile pictures of the accounts it links to
 ```
 
-- **Logos** come from the header, the footer and links to the home page, as the browser paints them: SVG, image or CSS. Partner strips, customer logos, payment badges and closed menus are skipped. Each cut is at least 240 px on its short side and has no transparency, so it can go straight into an image model or a video.
+- **Logos** come from the header, the footer and links to the home page, as the browser paints them: SVG, image or CSS. Partner strips, customer logos, payment badges and closed menus are skipped. Each cut is at least 240 px on its short side and has no transparency, so it can go straight into an image model or a video. When the page draws a logo as SVG, inline or as an SVG file, the vector is saved next to the cut with the page's colors written into it and no background. A logo in the page body that sits on a photo is skipped: that is an event's or a campaign's lockup, not the brand's logo.
 - **Colors** are the solid colors of the site's buttons, headings, text links, header, footer and large surfaces, plus the color the logo itself is drawn in. Tints, grey buttons and white language switches do not count.
 - **Fonts** are the families the page uses for headings and body text.
 - **Words**: the page title and description, its headings in reading order and what its buttons say, so copy can start from the product's own words instead of made-up claims.
@@ -81,7 +82,7 @@ It needs Node 22 or newer and Chrome, Chromium, Edge or Brave. Set `CHROME_PATH`
 1. Opens the home page in a headless browser on a 1600x900 desktop screen. An address deeper in the site is read from the home page, because a blog or a help center often wears another theme.
 2. Scrolls to the bottom and back, so lazy sections and footer logos load.
 3. Reads one DOM snapshot with layout and computed styles. Logo candidates are images, outermost SVGs and elements named "logo" or "brand". They are kept only in the page header, in the page footer, inside a link to the home page, or when they are named after the brand.
-4. Brings each logo to the middle of the screen, finishes its fade-in, hides whatever paints over it (a popup backdrop, the next line of text) and cuts it out with a margin of its own background.
+4. Brings each logo to the middle of the screen, finishes its fade-in, hides whatever paints over it (a popup backdrop, the next line of text) and cuts it out with a margin of its own background. The background is read from that margin's pixels, not from the CSS. A logo drawn as SVG is also written out as a vector, with the page's styles on it and its scripts removed.
 5. Hides floating overlays and takes the first screen at 2x.
 6. Fetches store listings and profile pictures over HTTPS from a fixed list of hosts, and refuses private addresses.
 

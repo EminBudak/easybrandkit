@@ -10,7 +10,9 @@
 // page footer (the block that ends the page), inside a link to the home page,
 // or is named after the brand; customer, partner and payment strips are
 // skipped. Everything is read from one DOM snapshot: no extra request, no
-// page JavaScript, until the marks are cut out one by one.
+// page JavaScript, until the marks are cut out one by one. Once cut, a mark
+// in the page body that sits on a picture is dropped (an event's lockup over
+// a photo), and a mark the page draws as SVG is saved as a vector too.
 
 const fs = require("fs");
 const path = require("path");
@@ -344,8 +346,9 @@ async function findLogos(cdp, pageUrl, pageWidth, pageHeight, alsoNamed = "") {
       : where === "footer" ? homeLink || brandHit
       : brandHit && logoHit;
     if (!keep) return;
-    // The colour it sits on: the first element up from it with a background,
-    // white when none has one.
+    // The colour it sits on as CSS has it: the first element up from it with
+    // a background, white when none has one. The cut's own pixels have the
+    // last word (captureLogos): CSS says white under a logo on a hero photo.
     let background = "";
     for (let p = i; p >= 0 && !background; p = parents[p]) background = cssColorToHex(styleOf(p, 2));
     candidates.push({ kind, where, x, y, w, h, src, alt: own.alt || "", background: background || "#ffffff", backendNodeId: (nodes.backendNodeId || [])[i] });
@@ -705,9 +708,145 @@ async function bringIntoView(cdp, mark) {
   return (await metrics(cdp)).scrollY;
 }
 
+// The logo as a vector file, run in the page. With no text, `this` is an
+// inline <svg>: it is copied with the page's styles written onto every part
+// (a class in the site's stylesheet, currentColor), without the parts the
+// page hides, and with the symbols and gradients it uses from elsewhere in
+// the page. With text, the text is the SVG file an <img> showed, kept as it
+// is. Either way scripts, event handlers and embedded HTML are dropped and
+// links are made absolute.
+const SVG_FILE = `function (text, base) {
+  var NS = "http://www.w3.org/2000/svg";
+  var NOT_DRAWN = /^(defs|symbol|clippath|mask|pattern|marker|lineargradient|radialgradient|filter)$/;
+  var INHERITED = ["fill", "fill-opacity", "fill-rule", "stroke", "stroke-width", "stroke-opacity", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset", "visibility", "clip-rule", "color", "font-family", "font-size", "font-weight", "font-style", "letter-spacing", "text-anchor", "dominant-baseline", "paint-order"];
+  var OWN = { "opacity": "1", "clip-path": "none", "mask": "none", "filter": "none", "stop-color": "rgb(0, 0, 0)", "stop-opacity": "1", "mix-blend-mode": "normal" };
+  var local = function (v) { return String(v).replace(/url\\((["']?)[^"')]*#([^"')]+)\\1\\)/g, "url(#$2)"); };
+  var parts = function (el) { return [el].concat([].slice.call(el.getElementsByTagName("*"))); };
+  var root;
+  if (typeof text === "string") {
+    var doc = new DOMParser().parseFromString(text, "image/svg+xml");
+    root = doc.documentElement;
+    if (!root || root.namespaceURI !== NS || doc.getElementsByTagName("parsererror").length) return "";
+  } else {
+    var source = this;
+    if (!source || source.namespaceURI !== NS) return "";
+    base = document.baseURI;
+    root = source.cloneNode(true);
+    var from = parts(source);
+    var to = parts(root);
+    var unused = function (el) {
+      for (var p = el.parentNode; p && p !== source; p = p.parentNode) if (NOT_DRAWN.test(String(p.localName).toLowerCase())) return true;
+      return false;
+    };
+    var gone = [];
+    for (var i = 0; i < from.length; i++) {
+      var cs = getComputedStyle(from[i]);
+      if (i > 0 && cs.display === "none" && !unused(from[i])) { gone.push(to[i]); continue; }
+      var up = i > 0 ? getComputedStyle(from[i].parentNode) : null;
+      var style = [];
+      INHERITED.forEach(function (prop) {
+        var v = cs.getPropertyValue(prop);
+        if (v && (!up || up.getPropertyValue(prop) !== v)) style.push(prop + ":" + local(v));
+      });
+      Object.keys(OWN).forEach(function (prop) {
+        var v = cs.getPropertyValue(prop);
+        if (v && v !== OWN[prop]) style.push(prop + ":" + local(v));
+      });
+      if (style.length) to[i].setAttribute("style", style.join(";"));
+      else to[i].removeAttribute("style");
+      // fill="var(--text)" means nothing outside the page; the value it had
+      // is in the style above, or comes from the parent.
+      [].slice.call(to[i].attributes).forEach(function (at) {
+        if (at.name !== "style" && at.value.indexOf("var(") !== -1) to[i].removeAttribute(at.name);
+      });
+    }
+    gone.forEach(function (el) { if (el.parentNode) el.parentNode.removeChild(el); });
+    var box = source.getBoundingClientRect();
+    if (!root.getAttribute("viewBox")) root.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+    root.setAttribute("width", String(Math.round(box.width * 100) / 100));
+    root.setAttribute("height", String(Math.round(box.height * 100) / 100));
+    var defs = null;
+    for (var round = 0; round < 5; round++) {
+      var wanted = [];
+      parts(root).forEach(function (el) {
+        [].slice.call(el.attributes).forEach(function (at) {
+          if (/(^|:)href$/.test(at.name) && at.value.charAt(0) === "#") wanted.push(at.value.slice(1));
+          at.value.replace(/url\\(#([^)]+)\\)/g, function (all, id) { wanted.push(id); return all; });
+        });
+      });
+      var added = false;
+      wanted.forEach(function (id) {
+        if (parts(root).some(function (el) { return el.getAttribute("id") === id; })) return;
+        var used = document.getElementById(id);
+        if (!used || used.namespaceURI !== NS) return;
+        if (!defs) { defs = document.createElementNS(NS, "defs"); root.insertBefore(defs, root.firstChild); }
+        defs.appendChild(used.cloneNode(true));
+        added = true;
+      });
+      if (!added) break;
+    }
+  }
+  parts(root).forEach(function (el) {
+    var name = String(el.localName).toLowerCase();
+    if (/^(script|foreignobject|iframe|object|embed|audio|video|canvas)$/.test(name) || (name === "style" && typeof text !== "string")) {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      return;
+    }
+    [].slice.call(el.attributes).forEach(function (at) {
+      if (/^on/i.test(at.name)) { el.removeAttribute(at.name); return; }
+      if (!/(^|:)href$/.test(at.name) || at.value.charAt(0) === "#") return;
+      if (/^\\s*(javascript|vbscript):/i.test(at.value)) { el.removeAttribute(at.name); return; }
+      try { at.value = new URL(at.value, base).href; } catch (e) {}
+    });
+  });
+  return new XMLSerializer().serializeToString(root);
+}`;
+
+// The SVG file an <img> showed, as the browser loaded it: no second request,
+// and nothing fetched from here at an address the page gave. "" when the
+// image is not an SVG file or its text is gone.
+async function svgSource(cdp, src) {
+  const data = String(src || "").match(/^data:image\/svg\+xml(;[^,]*)?,(.*)$/is);
+  try {
+    if (data) return /;base64/i.test(data[1] || "") ? Buffer.from(data[2], "base64").toString("utf8") : decodeURIComponent(data[2]);
+    if (!/\.svg$/.test(pathOf(src))) return "";
+    const { frameTree } = await cdp.send("Page.getFrameTree");
+    const { content = "", base64Encoded } = await cdp.send("Page.getResourceContent", { frameId: frameTree.frame.id, url: src });
+    return base64Encoded ? Buffer.from(content, "base64").toString("utf8") : content;
+  } catch {
+    return "";
+  }
+}
+
+// Writes the mark's vector as file in dir when the page draws it as SVG (an
+// inline <svg>, or an <img> of an SVG file). The file name, or "".
+const SVG_LIMIT = 2_000_000;
+async function saveVector(cdp, mark, dir, file) {
+  if (mark.kind !== "svg" && mark.kind !== "img") return "";
+  try {
+    const text = mark.kind === "img" ? await svgSource(cdp, mark.src) : null;
+    if (text === "" || (text && text.length > SVG_LIMIT)) return "";
+    const { object } = await cdp.send("DOM.resolveNode", { backendNodeId: mark.backendNodeId });
+    if (!object || !object.objectId) return "";
+    const { result } = await cdp.send("Runtime.callFunctionOn", {
+      objectId: object.objectId,
+      functionDeclaration: SVG_FILE,
+      arguments: [{ value: text }, { value: mark.src || "" }],
+      returnByValue: true,
+    });
+    const svg = String((result && result.value) || "");
+    if (!svg.startsWith("<svg") || svg.length > SVG_LIMIT) return "";
+    fs.writeFileSync(path.join(dir, file), svg + "\n");
+    return file;
+  } catch {
+    return "";
+  }
+}
+
 // Each mark with a margin of its real background, scaled so the short side
 // reaches 240 px and the long side about 1000 px (at most 8x). The files are
-// logo-01.png, logo-02.png … in dir, in the order of the marks.
+// logo-01.png, logo-02.png … in dir, in the order of the marks, with
+// logo-01.svg next to a mark the page draws as SVG.
 async function captureLogos(cdp, marks, dir, pageWidth, pageHeight) {
   const written = [];
   await cdp.send("DOM.getDocument", { depth: 0 });
@@ -730,14 +869,31 @@ async function captureLogos(cdp, marks, dir, pageWidth, pageHeight) {
     }
     const png = tagPng(Buffer.from(shot.data || "", "base64"), "Source", "easybrandkit logo");
     if (png.length < 33) continue;
-    const color = logoInk(png, mark.background);
+    // What the cut sits on, read from its own pixels along the sides where
+    // the margin is whole. A mark in the page body on a picture is an event's
+    // or a campaign's lockup (Stripe Sessions, white over a photo), not the
+    // brand's logo. A header or footer logo over a hero picture stays, but
+    // the color that is not the ground could be the picture's as well as
+    // the logo's, so it gives no logo color.
+    const ground = groundOf(png, Math.round(4 * scale), {
+      top: box.y - LOGO_MARGIN >= 0,
+      left: box.x - LOGO_MARGIN >= 0,
+      bottom: box.y + box.h + LOGO_MARGIN <= pageHeight,
+      right: box.x + box.w + LOGO_MARGIN <= pageWidth,
+    });
+    const onPicture = Boolean(ground && !ground.solid);
+    if (onPicture && mark.where === "page") continue;
+    const background = ground ? ground.hex : mark.background;
+    const color = onPicture ? "" : logoInk(png, background);
     const file = `logo-${String(written.length + 1).padStart(2, "0")}.png`;
     fs.writeFileSync(path.join(dir, file), png);
     written.push({
       file,
+      svg: await saveVector(cdp, mark, dir, file.replace(/\.png$/, ".svg")),
       where: mark.where,
       kind: mark.kind,
-      background: mark.background,
+      background,
+      onPicture,
       width: png.readUInt32BE(16),
       height: png.readUInt32BE(20),
       color,
@@ -830,4 +986,37 @@ function logoInk(png, background) {
   return "#" + [top.r, top.g, top.b].map((v) => Math.round(v / top.n).toString(16).padStart(2, "0")).join("");
 }
 
-module.exports = { findLogos, captureLogos, readWords, brandLink, brandTokens, tagPng, logoInk };
+// What a cut sits on, from its pixels: the middle color of the band along
+// its edges, and whether that band is one solid color (nine in ten of its
+// pixels close to the middle one). A photo or a pattern is not. Only the
+// sides given are read, since a mark at the page's edge has no margin there.
+// Null when no side is left or the PNG cannot be read.
+function groundOf(png, band, sides = { top: true, right: true, bottom: true, left: true }) {
+  let image;
+  try {
+    image = decodePng(png);
+  } catch {
+    return null;
+  }
+  if (!image) return null;
+  const { width, height } = image;
+  const depth = Math.max(1, Math.min(band, Math.floor(Math.min(width, height) / 4)));
+  const step = Math.max(1, Math.floor(Math.max(width, height) / 300));
+  const samples = [];
+  for (let k = 0; k < depth; k += Math.max(1, Math.floor(depth / 4))) {
+    for (let x = 0; x < width; x += step) {
+      if (sides.top) samples.push(image.pixel(x, k));
+      if (sides.bottom) samples.push(image.pixel(x, height - 1 - k));
+    }
+    for (let y = depth; y < height - depth; y += step) {
+      if (sides.left) samples.push(image.pixel(k, y));
+      if (sides.right) samples.push(image.pixel(width - 1 - k, y));
+    }
+  }
+  if (samples.length < 16) return null;
+  const middle = [0, 1, 2].map((c) => samples.map((p) => p[c]).sort((p, q) => p - q)[samples.length >> 1]);
+  const near = samples.filter((p) => Math.abs(p[0] - middle[0]) + Math.abs(p[1] - middle[1]) + Math.abs(p[2] - middle[2]) < 48).length;
+  return { hex: "#" + middle.map((v) => v.toString(16).padStart(2, "0")).join(""), solid: near >= samples.length * 0.9 };
+}
+
+module.exports = { findLogos, captureLogos, readWords, brandLink, brandTokens, tagPng, logoInk, groundOf };
